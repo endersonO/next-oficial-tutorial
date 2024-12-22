@@ -7,14 +7,28 @@ import { redirect } from 'next/navigation';
 const FormSchema = z.object({
     id: z.string(),
     customerId: z.string(),
-    amount: z.coerce.number(),
-    status: z.enum(['pending', 'paid']),
+    amount: z.coerce.number({
+        invalid_type_error: 'Please select a customer'
+    })
+    .gt(0, { message: 'Please enter an amount greater than $0.' }),,
+    status:  z.enum(['pending', 'paid'], {
+        invalid_type_error: 'Please select an invoice status.',
+      }),
     date: z.string(),
   });
 
 const CreateInvoice = FormSchema.omit({ id: true, date: true });
 
-export async function createInvoice(formData: FormData) {
+export type State = {
+    errors?: {
+      customerId?: string[];
+      amount?: string[];
+      status?: string[];
+    };
+    message?: string | null;
+  };
+
+export async function createInvoice(prevState: State, formData: FormData) {
     try {
     const { customerId, amount, status } = CreateInvoice.parse({
       customerId: formData.get('customerId'),
